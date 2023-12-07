@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controller;
@@ -10,6 +11,24 @@ namespace App\Controller;
  */
 class UsersController extends AppController
 {
+    public function login()
+    {
+        if ($this->request->is('post')) {
+            $user = $this->Auth->identify();
+            if ($user) {
+                $this->Auth->setUser($user);
+
+                if ($user['status'] == 0) {
+                    $this->Flash->error("You have not access permission !");
+                    return $this->redirect(['controller' => 'Users', 'action' => 'logout']);
+                }
+
+                return $this->redirect(['controller' => 'Users', 'action' => 'index']);
+            } else {
+                $this->Flash->error("Incorrect username or password !");
+            }
+        }
+    }
     /**
      * Index method
      *
@@ -18,14 +37,14 @@ class UsersController extends AppController
     public function index()
     {
         $key = $this->request->getQuery('key');
-        if($key){
-            $query = $this->Users->findByEmail($key,$key);
-        }else{
+        if ($key) {
+            $query = $this->Users->findByEmail($key, $key);
+        } else {
             $query = $this->Users;
         }
 
-        $users = $this->paginate($query,['contain'=>['Profiles']]);
-        
+        $users = $this->paginate($query, ['contain' => ['Profiles']]);
+
         $this->set(compact('users'));
     }
 
@@ -58,12 +77,12 @@ class UsersController extends AppController
             if (!$user->getErrors()) {
                 $image = $this->request->getData('image_file');
                 $fileName = $image->getClientFilename();
-            
+
                 $image->moveTo(WWW_ROOT . 'img' . DS . $fileName);
                 $user->image = $fileName;
             }
-            
-              
+
+
             if ($this->Users->save($user)) {
                 $this->Flash->success(__('The user has been saved.'));
 
@@ -116,5 +135,10 @@ class UsersController extends AppController
         }
 
         return $this->redirect(['action' => 'index']);
+    }
+
+    public function logout()
+    {
+        return $this->redirect($this->Auth->logout());
     }
 }
